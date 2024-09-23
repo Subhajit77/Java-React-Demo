@@ -9,7 +9,7 @@ pool:
 variables:
   terraformWorkingDirectory: 'infrastructure'
   azureResourceGroup: 'rg-java-react-app'
-  azureLocation: 'West Europe'
+  azureLocation: 'East Europe'
 
 steps:
   # Install Terraform
