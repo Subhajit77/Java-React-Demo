@@ -8,37 +8,68 @@ pool:
 variables:
   imageName: 'java-backend'
   azureSubscriptionServiceConnection: '98d927e6-6d13-4524-8723-0e7c858591e3'
-  appName: 'springbootdemobackend'  
+  devAppName: 'springbootdemobackend-dev'  
+  prodAppName: 'springbootdemobackend-prod'  
   dockerRegistryServiceConnection: 'demodockerregistry'
   acrLoginServer: 'javawebappcg.azurecr.io'
 
-steps:
-  - task: Maven@3
-    inputs:
-    mavenPomFile: 'pom.xml'
-    mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.11'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'package'
+stages:
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: BuildAndPush
+        displayName: 'Build and Push Docker Image'
+        steps:
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.11'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              goals: 'package'
 
-  - task: Docker@2
-    inputs:
-      containerRegistry: '$(dockerRegistryServiceConnection)'
-      repository: '$(imageName)'
-      command: 'buildAndPush'
-      Dockerfile: '**/Dockerfile'
-      tags: |
-        $(Build.BuildId)
-    displayName: 'Build and Push Docker Image'
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              repository: '$(imageName)'
+              command: 'buildAndPush'
+              Dockerfile: '**/Dockerfile'
+              tags: |
+                $(Build.BuildId)
+            displayName: 'Build and Push Docker Image'
 
-  - task: AzureWebAppContainer@1
-    inputs:
-      azureSubscription: '$(azureSubscriptionServiceConnection)'
-      appName: 'backend-app-name'
-      containerRegistry: '$(dockerRegistryServiceConnection)'
-      imageName: '$(imageName)'
-      tag: '$(Build.BuildId)'
-    displayName: 'Deploy to Azure Web App'
+  - stage: Dev
+    displayName: 'Development Stage'
+    dependsOn: Build
+    jobs:
+      - job: DeployDev
+        displayName: 'Deploy to Development'
+        steps:
+          - task: AzureWebAppContainer@1
+            inputs:
+              azureSubscription: '$(azureSubscriptionServiceConnection)'
+              appName: '$(devAppName)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              imageName: '$(imageName)'
+              tag: '$(Build.BuildId)'
+            displayName: 'Deploy to Azure Web App - Dev'
+
+  - stage: Prod
+    displayName: 'Production Stage'
+    dependsOn: Dev
+    condition: succeeded()  
+    jobs:
+      - job: DeployProd
+        displayName: 'Deploy to Production'
+        steps:
+          - task: AzureWebAppContainer@1
+            inputs:
+              azureSubscription: '$(azureSubscriptionServiceConnection)'
+              appName: '$(prodAppName)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              imageName: '$(imageName)'
+              tag: 'latest' 
+            displayName: 'Deploy to Azure Web App - Prod'
