@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformWorkingDirectory: 'infrastructure'
+  azureResourceGroup: 'rg-java-react-app'
+  azureLocation: 'West Europe'
+
+steps:
+  # Install Terraform
+  - task: TerraformInstaller@0
+    inputs:
+      terraformVersion: 'latest'
+    displayName: 'Install Terraform'
+
+  # Initialize Terraform without backend
+  - script: |
+      terraform init
+    workingDirectory: $(terraformWorkingDirectory)
+    displayName: 'Terraform Init'
+
+  # Terraform Plan
+  - script: |
+      terraform plan -var="resource_group=$(azureResourceGroup)" \
+                     -var="location=$(azureLocation)"
+    workingDirectory: $(terraformWorkingDirectory)
+    displayName: 'Terraform Plan'
+
+  # Terraform Apply
+  - script: |
+      terraform apply -auto-approve -var="resource_group=$(azureResourceGroup)" \
+                                        -var="location=$(azureLocation)"
+    workingDirectory: $(terraformWorkingDirectory)
+    displayName: 'Terraform Apply'
+
+  # Output Results
+  - script: |
+      terraform output
+    workingDirectory: $(terraformWorkingDirectory)
+    displayName: 'Show Outputs'

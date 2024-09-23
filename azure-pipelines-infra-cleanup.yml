@@ -1,0 +1,13 @@
+trigger:
+  branches:
+    include:
+      - main
+      
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - script: |
+      terraform init
+      terraform destroy -auto-approve
+    displayName: 'Destroy Terraform Infrastructure'

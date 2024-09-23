@@ -1,0 +1,42 @@
+trigger:
+  branches:
+    include:
+      - main
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: 'react-frontend'
+  azureSubscriptionServiceConnection: '98d927e6-6d13-4524-8723-0e7c858591e3'
+  appName: 'reactdemofrontend'  
+  dockerRegistryServiceConnection: 'demodockerregistry'
+  acrLoginServer: 'javawebappcg.azurecr.io'
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '18.x'
+    displayName: 'Install Node.js'
+  - script: |
+      npm install
+      npm run build
+    displayName: 'Build React App'
+
+  - task: Docker@2
+    inputs:
+      containerRegistry: '$(dockerRegistryServiceConnection)'
+      repository: '$(imageName)'
+      command: 'buildAndPush'
+      Dockerfile: '**/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+    displayName: 'Build and Push Docker Image'
+
+  - task: AzureWebAppContainer@1
+    inputs:
+      azureSubscription: '$(azureSubscriptionServiceConnection)'
+      appName: 'frontend-app-name'
+      containerRegistry: '$(dockerRegistryServiceConnection)'
+      imageName: '$(imageName)'
+      tag: '$(Build.BuildId)'
+    displayName: 'Deploy to Azure Web App'
