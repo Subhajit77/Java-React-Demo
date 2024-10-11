@@ -27,7 +27,6 @@ stages:
           - script: |
               npm install
               npm run build
-            displayName: 'Build React App'
           - task: Docker@2
             inputs:
               containerRegistry: '$(dockerRegistryServiceConnection)'
@@ -36,7 +35,7 @@ stages:
               Dockerfile: 'frontend/Dockerfile'
               tags: |
                 $(Build.BuildId)
-            displayName: 'Build and Push Docker Image'
+            displayName: 'Build & Push Docker Image to Registry'
 
   - stage: Dev
     displayName: 'Development Stage'
