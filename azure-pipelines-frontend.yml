@@ -33,7 +33,7 @@ stages:
               containerRegistry: '$(dockerRegistryServiceConnection)'
               repository: '$(imageName)'
               command: 'buildAndPush'
-              Dockerfile: '**/Dockerfile'
+              Dockerfile: 'frontend/Dockerfile'
               tags: |
                 $(Build.BuildId)
             displayName: 'Build and Push Docker Image'
